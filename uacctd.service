@@ -1,0 +1,12 @@
+[Unit]
+Description=uacctd daemon providing Netflow collection service
+Wants=network.target
+After=network.target
+ConditionPathExists=/etc/pmacct/uacctd.conf
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/pmacct/uacctd
+ExecStart=/usr/sbin/uacctd -f /etc/pmacct/uacctd.conf $OPTIONS
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+diff --git a/src/util.c b/src/util.c
+index 5e17bcd..b3d5222 100644
+--- a/src/util.c
++++ b/src/util.c
+@@ -22,6 +22,7 @@
+ #define __UTIL_C
+ 
+ /* includes */
++#include <sys/file.h>
+ #include "pmacct.h"
+ #include "pmacct-data.h"
+ #include "ip_flow.h"

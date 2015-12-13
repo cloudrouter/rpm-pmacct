@@ -1,0 +1,4 @@
+# /etc/sysconfig/pmacct/nfacctd
+
+# Additional options to be passed when starting the daemon
+OPTIONS=

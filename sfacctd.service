@@ -1,0 +1,12 @@
+[Unit]
+Description=sfacctd daemon providing sflow collection
+Wants=network.target
+After=network.target
+ConditionPathExists=/etc/pmacct/sfacctd.conf
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/pmacct/sfacctd
+ExecStart=/usr/sbin/sfacctd -f /etc/pmacct/sfacctd.conf $OPTIONS
+
+[Install]
+WantedBy=multi-user.target
