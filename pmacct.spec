@@ -1,8 +1,16 @@
 %global _hardened_build 1
 
+%if ! 0%{?fedora} >= 23
+%define _enable_ulog --enable-ulog
+%define _use_ulog 1
+%else
+%define _use_ulog 0
+%endif
+
+
 Name:               pmacct
 Version:            1.5.2
-Release:            2
+Release:            3%{?dist}
 Summary:            Accounting and aggregation toolsuite for IPv4 and IPv6
 License:            GPLv2+
 Group:              Applications/Engineering
@@ -19,16 +27,10 @@ Source8:            uacctd
 
 Patch1:             pmacct-fix-implicit-pointer-decl.diff
 
-BuildRequires:      gcc
-BuildRequires:      make
-BuildRequires:      mariadb-devel
-BuildRequires:      libpcap-devel
-BuildRequires:      libstdc++-static
-BuildRequires:      pkgconfig
-BuildRequires:      postgresql-devel
+BuildRequires:      gcc, make, libstdc++-static, pkgconfig
+BuildRequires:      mariadb-devel, libpcap-devel, postgresql-devel
 BuildRequires:      sqlite-devel >= 3.0.0
-BuildRequires:      pkgconfig(geoip)
-BuildRequires:      pkgconfig(jansson)
+BuildRequires:      pkgconfig(geoip), pkgconfig(jansson)
 BuildRequires:      systemd
 
 Requires(post):     systemd
@@ -53,7 +55,8 @@ export data to tools like RRDtool, GNUPlot, Net-SNMP, MRTG, and Cacti.
 chmod -x sql/pmacct-*
 
 %build
-export CFLAGS="%{optflags} -Wno-return-type"
+export CFLAGS="%{optflags} -Wno-return-type -Wno-error=format-security -Wmaybe-uninitialized"
+
 %configure \
     --sysconfdir=%{_sysconfdir}/%{name} \
     --prefix=%{_prefix} \
@@ -69,7 +72,7 @@ export CFLAGS="%{optflags} -Wno-return-type"
     --enable-jansson \
     --enable-64bit \
     --enable-threads \
-    --enable-ulog
+    %{?_enable_ulog}
 
 make %{?_smp_mflags}
 
@@ -82,26 +85,40 @@ install -Dp examples/pmacctd-sql_v2.conf.example %{buildroot}/%{_sysconfdir}/%{n
 
 # install systemd units
 install -d %{buildroot}/%{_unitdir} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
-install %{SOURCE1} %{SOURCE3} %{SOURCE5} %{SOURCE7} %{buildroot}/%{_unitdir}
-install %{SOURCE2} %{SOURCE4} %{SOURCE6} %{SOURCE8} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
+install %{SOURCE1} %{SOURCE3} %{SOURCE5} %{buildroot}/%{_unitdir}
+install %{SOURCE2} %{SOURCE4} %{SOURCE6} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
+
+%if 0%{?_use_ulog}
+install %{SOURCE7} %{buildroot}/%{_unitdir}
+install %{SOURCE8} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
+%endif
 
 %post
 %systemd_post nfacctd.service
 %systemd_post pmacctd.service
 %systemd_post sfacctd.service
+%if 0%{?_use_ulog}
 %systemd_post uacctd.service
+%endif
+
 
 %preun
 %systemd_preun nfacctd.service
 %systemd_preun pmacctd.service
 %systemd_preun sfacctd.service
+%if 0%{?_use_ulog}
 %systemd_preun uacctd.service
+%endif
+
 
 %postun
 %systemd_postun_with_restart nfacctd.service
 %systemd_postun_with_restart pmacctd.service
 %systemd_postun_with_restart sfacctd.service
+%if 0%{?_use_ulog}
 %systemd_postun_with_restart uacctd.service
+%endif
+
 
 %files
 %defattr(-,root,root)
@@ -115,22 +132,32 @@ install %{SOURCE2} %{SOURCE4} %{SOURCE6} %{SOURCE8} %{buildroot}/%{_sysconfdir}/
 %{_sbindir}/pmacctd
 %{_sbindir}/sfacctd
 %{_sbindir}/uacctd
+
 #
 %{_unitdir}/nfacctd.service
 %{_unitdir}/pmacctd.service
 %{_unitdir}/sfacctd.service
+%if 0%{?_use_ulog}
 %{_unitdir}/uacctd.service
+%endif
+
 #
 %{_sysconfdir}/sysconfig/%{name}/nfacctd
 %{_sysconfdir}/sysconfig/%{name}/pmacctd
 %{_sysconfdir}/sysconfig/%{name}/sfacctd
+%if 0%{?_use_ulog}
 %{_sysconfdir}/sysconfig/%{name}/uacctd
+%endif
 #
 %dir %{_sysconfdir}/pmacct
 %attr(600,root,root) %config(noreplace) %{_sysconfdir}/pmacct/nfacctd.conf
 %attr(600,root,root) %config(noreplace) %{_sysconfdir}/pmacct/pmacctd.conf
 
 %changelog
+* Tue Dec 29 2015 John Siegrist <john@complects.com> - 1.5.2-3
+- Conditionally disabled ULOG for newer versions of Fedora
+- Disabled build Warnings as Errors that were causing failures.
+
 * Mon Dec 21 2015 Arun Babu Neelicattu <arun.neelicattu@gmail.com> - 1.5.2-2
 - Enable ULOG
 
