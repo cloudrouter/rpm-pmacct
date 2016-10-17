@@ -7,10 +7,9 @@
 %define _use_ulog 0
 %endif
 
-
 Name:               pmacct
-Version:            1.5.2
-Release:            3%{?dist}
+Version:            1.6.0
+Release:            1%{?dist}
 Summary:            Accounting and aggregation toolsuite for IPv4 and IPv6
 License:            GPLv2+
 Group:              Applications/Engineering
@@ -27,16 +26,22 @@ Source8:            uacctd
 
 Patch1:             pmacct-fix-implicit-pointer-decl.diff
 
-BuildRequires:      gcc, make, libstdc++-static, pkgconfig
-BuildRequires:      mariadb-devel, libpcap-devel, postgresql-devel
+BuildRequires:      gcc
+BuildRequires:      GeoIP-devel
+BuildRequires:      libpcap-devel
+BuildRequires:      libstdc++-static
+BuildRequires:      make
+BuildRequires:      mariadb-devel
+BuildRequires:      pkgconfig
+BuildRequires:      pkgconfig(geoip)
+BuildRequires:      pkgconfig(jansson)
+BuildRequires:      postgresql-devel
 BuildRequires:      sqlite-devel >= 3.0.0
-BuildRequires:      pkgconfig(geoip), pkgconfig(jansson)
 BuildRequires:      systemd
 
 Requires(post):     systemd
 Requires(preun):    systemd
 Requires(postun):   systemd
-
 
 %description
 pmacct is a small set of passive network monitoring tools to measure, account,
@@ -62,9 +67,9 @@ export CFLAGS="%{optflags} -Wno-return-type -Wno-error=format-security -Wmaybe-u
     --prefix=%{_prefix} \
     --exec-prefix=%{_exec_prefix} \
     --sbindir=%{_sbindir} \
+    --enable-v4-mapped \
     --enable-l2 \
     --enable-ipv6 \
-    --enable-v4-mapped \
     --enable-mysql \
     --enable-pgsql \
     --enable-sqlite3 \
@@ -101,7 +106,6 @@ install %{SOURCE8} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
 %systemd_post uacctd.service
 %endif
 
-
 %preun
 %systemd_preun nfacctd.service
 %systemd_preun pmacctd.service
@@ -109,7 +113,6 @@ install %{SOURCE8} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
 %if 0%{?_use_ulog}
 %systemd_preun uacctd.service
 %endif
-
 
 %postun
 %systemd_postun_with_restart nfacctd.service
@@ -122,46 +125,41 @@ install %{SOURCE8} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
 
 %files
 %defattr(-,root,root)
-%doc AUTHORS ChangeLog CONFIG-KEYS COPYING FAQS KNOWN-BUGS NEWS README TODO TOOLS UPGRADE
+%doc AUTHORS ChangeLog CONFIG-KEYS COPYING FAQS QUICKSTART TOOLS UPGRADE
 %doc docs examples sql
 %{_bindir}/pmacct
-%{_bindir}/pmmyplay
-%{_bindir}/pmpgplay
-#
 %{_sbindir}/nfacctd
 %{_sbindir}/pmacctd
+%{_sbindir}/pmtelemetryd
 %{_sbindir}/sfacctd
+%if 0%{?_use_ulog}
 %{_sbindir}/uacctd
-
-#
+%endif
 %{_unitdir}/nfacctd.service
 %{_unitdir}/pmacctd.service
 %{_unitdir}/sfacctd.service
 %if 0%{?_use_ulog}
 %{_unitdir}/uacctd.service
 %endif
-
-#
 %{_sysconfdir}/sysconfig/%{name}/nfacctd
 %{_sysconfdir}/sysconfig/%{name}/pmacctd
 %{_sysconfdir}/sysconfig/%{name}/sfacctd
 %if 0%{?_use_ulog}
 %{_sysconfdir}/sysconfig/%{name}/uacctd
 %endif
-#
+
 %dir %{_sysconfdir}/pmacct
 %attr(600,root,root) %config(noreplace) %{_sysconfdir}/pmacct/nfacctd.conf
 %attr(600,root,root) %config(noreplace) %{_sysconfdir}/pmacct/pmacctd.conf
 
 %changelog
+* Mon Oct 17 2016 John Siegrist <john@complects.com> - 1.6.0-1
+- Update to version 1.6.0
 * Tue Dec 29 2015 John Siegrist <john@complects.com> - 1.5.2-3
 - Conditionally disabled ULOG for newer versions of Fedora
 - Disabled build Warnings as Errors that were causing failures.
-
 * Mon Dec 21 2015 Arun Babu Neelicattu <arun.neelicattu@gmail.com> - 1.5.2-2
 - Enable ULOG
-
 * Sun Dec 13 2015 Arun Babu Neelicattu <arun.neelicattu@gmail.com> - 1.5.2-1
 - Initial packaging based on OpenSUSE rpms packaged by Peter Nixon and available
   at http://download.opensuse.org/repositories/server:/monitoring/
-
